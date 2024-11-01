@@ -18,7 +18,8 @@ remappings = [
     '@layerzerolabs/=lib/@layerzerolabs/',
     '@openzeppelin/=lib/@openzeppelin/',
     '@openzeppelin/contracts=lib/openzeppelin-contracts/contracts',
-@account-abstraction
+    '@@account-abstraction/contracts=lib/@account-abstraction-contracts/contracts'
+
 ]
 
 [etherscan]
