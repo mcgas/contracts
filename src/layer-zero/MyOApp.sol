@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {OApp, Origin, MessagingFee} from "@layerzero-v2/evm/contracts/oapp/OApp.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MyOApp is OApp {
-    constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
+    constructor(
+        address _endpoint,
+        address _owner
+    ) OApp(_endpoint, _owner) Ownable(_owner) {}
 
     // Some arbitrary data you want to deliver to the destination chain!
     string public data;
@@ -16,7 +19,11 @@ contract MyOApp is OApp {
      * @param _message The message to send.
      * @param _options Message execution options (e.g., for sending gas to destination).
      */
-    function send(uint32 _dstEid, string memory _message, bytes calldata _options) external payable {
+    function send(
+        uint32 _dstEid,
+        string memory _message,
+        bytes calldata _options
+    ) external payable {
         // Encodes the message before invoking _lzSend.
         // Replace with whatever data you want to send!
         bytes memory _payload = abi.encode(_message);
