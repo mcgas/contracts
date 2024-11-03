@@ -1,10 +1,19 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {OApp, Origin, MessagingFee} from "@layerzero-v2/evm/contracts/oapp/OApp.sol";
+// PaymasterOApp.sol
+
+// Role: Provides utility functions for CustomPaymaster.sol, including cross-chain messaging support.
+// Details: Contains functions for interacting with the LayerZero OApp protocol to manage cross-chain messaging.
+// Relationship: Utilized by CustomPaymaster to streamline message handling and validation processes.
+
+pragma solidity ^0.8.20;
+
+// import {OApp, Origin, MessagingFee} from "@layerzerolabs/contracts/oapp/OApp.sol";
+import {OApp, Origin, MessagingFee} from "../../lib/layerzero-v2/packages/layerzero-v2/evm/oapp/contracts/oapp/OApp.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MyOApp is OApp {
+contract PaymasterOApp is OApp {
     constructor(
         address _endpoint,
         address _owner

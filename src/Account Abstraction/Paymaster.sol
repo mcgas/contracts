@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 
 contract Paymaster is IPaymaster {
-    function validatePaymasterUserOp(UserOperation calldata, bytes32, uint256)
-        external
-        pure
-        returns (bytes memory context, uint256 validationData)
-    {
+    function validatePaymasterUserOp(
+        UserOperation calldata,
+        bytes32,
+        uint256
+    ) external pure returns (bytes memory context, uint256 validationData) {
         context = new bytes(0);
         validationData = 0;
     }
@@ -24,5 +24,9 @@ contract Paymaster is IPaymaster {
      * @param context - the context value returned by validatePaymasterUserOp
      * @param actualGasCost - actual gas used so far (without this postOp call).
      */
-    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) external {}
+    function postOp(
+        PostOpMode mode,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) external {}
 }

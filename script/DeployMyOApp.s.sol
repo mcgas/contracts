@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+
 import { Script } from "forge-std/Script.sol";
 import { HelperConfig } from "./HelperConfig.s.sol";
-import { MyOApp } from "../contracts/MyOApp.sol";
+import { PaymasterOApp } from "../src/layer-zero/PaymasterOApp.sol";
 import { console } from "forge-std/Script.sol";
 
 contract DeployMyOApp is Script {
     // address[] public configurationAddresses;
     // address[] public priceFeedAddresses;
 
-    function run() external returns (MyOApp, HelperConfig) {
+    function run() external returns (PaymasterOApp, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig(); // This comes with our mocks!
         address ownerAddress = address(0xcC9E163Fcd646DCa936268C87Eed7503469acAce);
 
@@ -33,7 +34,7 @@ contract DeployMyOApp is Script {
         console.log("endPointID", endPointID);
 
         vm.startBroadcast(deployerKey);
-        MyOApp myOApp = new MyOApp(endpointV2, ownerAddress);
+        PaymasterOApp myOApp = new PaymasterOApp(endpointV2, ownerAddress);
         // Call on both sides per pathway
         myOApp.setPeer(endPointID, addressToBytes32(address(myOApp)));
 

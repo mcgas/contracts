@@ -7,9 +7,11 @@ libs = ["lib"]
 test = "test"
 
 remappings = [
-    "@openzeppelin/contracts=./lib/openzeppelin-contracts",
-    '@account-abstraction/contracts=./lib/@account-abstraction/contracts',
-    "@layerzero-v2/evm=./lib/@layerzero-v2/evm/oapp"
+    "forge-std/=./lib/forge-std/src/",
+    "@openzeppelin/contracts=./lib/openzeppelin-contracts/contracts",
+    '@account-abstraction/contracts=./lib/account-abstraction/contracts',
+    "@layerzerolabs/contracts=./lib/layerzero-v2/packages/layerzero-v2/evm/oapp/contracts",
+                         
 ]
 
 [etherscan]
