@@ -39,8 +39,8 @@ In this scenario, the user purchases a gas subscription on **Chain A** and subse
 
 5. **Paymaster's Pre-Op Function**:
    - In the pre-operation (pre-op) phase, the paymaster verifies that:
-     - The user does not have a subscription on Chain B.
      - The transaction originates from our **customized bundler** (ensuring authenticity).
+     (- If not, the subscription must be on the same chain.)
    - If the checks pass, the paymaster proceeds to pay the gas fee on the user’s behalf.
 
 6. **Cross-Chain Messaging for Subscription Update**:
@@ -86,7 +86,7 @@ In this same-chain scenario, the process is more straightforward. The bundler an
 2. **Paymaster Contract**:
    - Ensures the subscription is verified in the **pre-op function** and then pays the gas fees if requirements are met.
    - Updates the user's subscription details in the **post-op function** using cross-chain messaging when necessary.
-   - Communicates with LayerZero's OApp protocol to update off-chain records.
+   - Communicates with LayerZero's OApp protocol to update subscription.
 
 3. **LayerZero OApp Protocol**:
    - Facilitates secure and efficient cross-chain messaging.
