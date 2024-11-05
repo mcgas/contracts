@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -52,6 +53,8 @@ contract SubscriptionNFT is ERC721, Ownable {
     /// Mapping from token ID to Subscription data
     mapping(uint256 => Subscription) public subscriptions;
 
+    address public gasVault;
+
     /// Counter to generate unique subscription token IDs
     uint256 private _tokenIdCounter;
 
@@ -72,6 +75,41 @@ contract SubscriptionNFT is ERC721, Ownable {
         address paymentToken,
         uint256 amountPaid
     );
+
+    event SubscriptionReduced(
+        uint256 indexed tokenId,
+        uint256 amountReduced,
+        uint256 newRemainingAmount
+    );
+    event SubscriptionIncreased(
+        uint256 indexed tokenId,
+        uint256 amountIncreased,
+        uint256 newRemainingAmount
+    );
+    event SponsoredAddressAdded(uint256 indexed tokenId, address addedAddress);
+    event SponsoredAddressRemoved(
+        uint256 indexed tokenId,
+        address removedAddress
+    );
+    event SubscriptionExtended(
+        uint256 indexed tokenId,
+        uint256 additionalDays,
+        uint256 newEndDate
+    );
+    event SubscriptionUpdated(
+        uint256 indexed tokenId,
+        uint256 additionalDays,
+        uint256 amountAdded,
+        address[] newSponsoredAddresses
+    );
+
+    modifier onlyTokenOwner(uint256 tokenId) {
+        require(
+            ownerOf(tokenId) == msg.sender,
+            "SubscriptionNFT: Caller is not the token owner"
+        );
+        _;
+    }
 
     constructor() ERC721("SubscriptionNFT", "SUBNFT") Ownable(_msgSender()) {}
 
@@ -96,6 +134,13 @@ contract SubscriptionNFT is ERC721, Ownable {
         uint256 paidAmount,
         address[] calldata sponsoredAddresses
     ) external onlyOwner returns (uint256) {
+        // ?
+        // Payment with smart wallet?
+        // Pay before calling this function
+        // IERC20(paymentToken).transferFrom(subscriber, gasVault, paidAmount);
+        // Native payment?
+        // A vals smart wallet as payments destination?
+
         uint256 tokenId = ++_tokenIdCounter;
 
         // Store subscription details
@@ -122,15 +167,14 @@ contract SubscriptionNFT is ERC721, Ownable {
 
         return tokenId;
     }
+    // function giftSubscription()
 
     /**
      * @dev Checks if a subscription is still active.
      * @param tokenId The token ID of the subscription NFT.
      * @return bool True if the subscription is active, false otherwise.
      */
-    function isSubscriptionActive(
-        uint256 tokenId
-    ) external view returns (bool) {
+    function isSubscriptionActive(uint256 tokenId) public view returns (bool) {
         require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
 
         Subscription memory subscription = subscriptions[tokenId];
@@ -140,28 +184,153 @@ contract SubscriptionNFT is ERC721, Ownable {
     }
 
     /**
-     * @notice Updates the `remainingAmount` of tokens for a given subscription.
+     * @notice Reduces the `remainingAmount` of tokens for a given subscription.
      * @param tokenId The unique token ID of the subscription NFT.
-     * @param amountDeducted Amount to deduct from the `remainingAmount`.
-     *
-     * @dev This function is called by SubscriptionManager to track deductions
-     * from the user’s subscription as gas fees are paid.
+     * @param amountReduced Amount to deduct from the `remainingAmount`.
+     * @dev Throws if the subscription is expired or balance is insufficient.
      */
-    function updateRemainingAmount(
+    function reduceRemainingAmount(
         uint256 tokenId,
-        uint256 amountDeducted
+        uint256 amountReduced
     ) external onlyOwner {
         require(
-            _exists(tokenId),
-            "SubscriptionNFT: Subscription does not exist"
+            isSubscriptionActive(tokenId),
+            "SubscriptionNFT: Subscription is not active"
         );
-        Subscription storage subscription = subscriptions[tokenId];
 
+        Subscription storage subscription = subscriptions[tokenId];
         require(
-            subscription.remainingAmount >= amountDeducted,
+            subscription.remainingAmount >= amountReduced,
             "SubscriptionNFT: Insufficient remaining amount"
         );
-        subscription.remainingAmount -= amountDeducted;
+        subscription.remainingAmount -= amountReduced;
+
+        emit SubscriptionReduced(
+            tokenId,
+            amountReduced,
+            subscription.remainingAmount
+        );
+    }
+
+    /**
+     * @notice Increases the `remainingAmount` of tokens for a given subscription.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @param amountAdded Amount to add to the `remainingAmount`.
+     */
+    function increaseRemainingAmount(
+        uint256 tokenId,
+        uint256 amountAdded
+    ) external onlyTokenOwner(tokenId) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        Subscription storage subscription = subscriptions[tokenId];
+        subscription.paidAmount += amountAdded;
+        subscription.remainingAmount += amountAdded;
+
+        emit SubscriptionIncreased(
+            tokenId,
+            amountAdded,
+            subscription.remainingAmount
+        );
+    }
+
+    /**
+     * @notice Adds a new address to the `sponsoredAddresses` array for a given subscription.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @param newAddress The address to be added to the sponsored list.
+     */
+    function addSponsoredAddress(
+        uint256 tokenId,
+        address newAddress
+    ) external onlyTokenOwner(tokenId) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        subscriptions[tokenId].sponsoredAddresses.push(newAddress);
+
+        emit SponsoredAddressAdded(tokenId, newAddress);
+    }
+
+    /**
+     * @notice Removes an address from the `sponsoredAddresses` array for a given subscription.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @param addressToRemove The address to be removed from the sponsored list.
+     */
+    function removeSponsoredAddress(
+        uint256 tokenId,
+        address addressToRemove
+    ) external onlyTokenOwner(tokenId) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        address[] storage addresses = subscriptions[tokenId].sponsoredAddresses;
+        uint256 length = addresses.length;
+        for (uint256 i = 0; i < length; i++) {
+            if (addresses[i] == addressToRemove) {
+                addresses[i] = addresses[length - 1];
+                addresses.pop();
+
+                emit SponsoredAddressRemoved(tokenId, addressToRemove);
+                return;
+            }
+        }
+        revert("SubscriptionNFT: Address not found in sponsored list");
+    }
+
+    /**
+     * @notice Extends the end date of a subscription by a given number of days.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @param additionalDays Number of days to extend the subscription.
+     */
+    function extendSubscriptionTime(
+        uint256 tokenId,
+        uint256 additionalDays
+    ) external onlyTokenOwner(tokenId) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        Subscription storage subscription = subscriptions[tokenId];
+        subscription.endDate += additionalDays * 1 days;
+
+        emit SubscriptionExtended(
+            tokenId,
+            additionalDays,
+            subscription.endDate
+        );
+    }
+
+    /**
+     * @notice Updates a subscription by modifying sponsored addresses, extending time, and adding tokens.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @param newSponsoredAddresses Array of addresses to replace the current sponsored addresses.
+     * @param additionalDays Number of days to extend the subscription.
+     * @param amountAdded Amount of tokens to add to the remaining balance.
+     */
+    function updateSubscription(
+        uint256 tokenId,
+        address[] calldata newSponsoredAddresses,
+        uint256 additionalDays,
+        uint256 amountAdded
+    ) external onlyTokenOwner(tokenId) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        Subscription storage subscription = subscriptions[tokenId];
+
+        // Update sponsored addresses
+        delete subscription.sponsoredAddresses;
+        for (uint256 i = 0; i < newSponsoredAddresses.length; i++) {
+            subscription.sponsoredAddresses.push(newSponsoredAddresses[i]);
+        }
+
+        // Extend subscription time
+        subscription.endDate += additionalDays * 1 days;
+
+        // Increase remaining balance
+        subscription.remainingAmount += amountAdded;
+
+        emit SubscriptionUpdated(
+            tokenId,
+            additionalDays,
+            subscription.remainingAmount,
+            newSponsoredAddresses
+        );
     }
 
     function _exists(uint256 tokenId) internal view returns (bool) {
