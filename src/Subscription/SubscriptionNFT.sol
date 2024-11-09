@@ -213,6 +213,17 @@ contract SubscriptionNFT is ERC721, Ownable {
     }
 
     /**
+     * @notice Retrieves the remaining balance of a subscription.
+     * @param tokenId The unique token ID of the subscription NFT.
+     * @return uint256 The remaining amount of tokens available in the subscription.
+     */
+    function getRemainingAmount(uint256 tokenId) external view returns (uint256) {
+        require(_exists(tokenId), "SubscriptionNFT: Token ID does not exist");
+
+        return subscriptions[tokenId].remainingAmount;
+    }
+
+    /**
      * @notice Increases the `remainingAmount` of tokens for a given subscription.
      * @param tokenId The unique token ID of the subscription NFT.
      * @param amountAdded Amount to add to the `remainingAmount`.
